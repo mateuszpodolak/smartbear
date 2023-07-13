@@ -1,4 +1,4 @@
-package com.podolak.smartbear.service;
+package com.podolak.smartbear.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import java.util.Map;
  */
 @Getter
 @AllArgsConstructor
-public enum EnglishNumberLiteralsEnum {
+public enum EnglishNumberLiteral {
     ONE(1, "one"),
     TWO(2, "two"),
     THREE(3, "three"),
@@ -49,7 +49,7 @@ public enum EnglishNumberLiteralsEnum {
 
     static {
         Map<Integer, String> map = new HashMap<>();
-        for (EnglishNumberLiteralsEnum literal : EnglishNumberLiteralsEnum.values()) {
+        for (EnglishNumberLiteral literal : EnglishNumberLiteral.values()) {
             map.put(literal.getNumeral(), literal.getSpokenValue());
         }
         LITERALS_MAP = Collections.unmodifiableMap(map);

@@ -3,6 +3,7 @@ package com.podolak.smartbear.service;
 import com.podolak.smartbear.dao.AuditLog;
 import com.podolak.smartbear.dto.audit.AuditLogDto;
 import com.podolak.smartbear.dto.PageResponseDto;
+import com.podolak.smartbear.enums.AuditLogLevel;
 import com.podolak.smartbear.repository.AuditLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,8 +25,15 @@ public class AuditLogService {
     /**
      * Saves new record in AuditLog DB.
      */
-    public AuditLog saveAuditLog(String logMsg) {
-        return auditLogRepository.save(new AuditLog(logMsg));
+    public AuditLog saveInfoAuditLog(String logMsg) {
+        return auditLogRepository.save(new AuditLog(logMsg, AuditLogLevel.INFO));
+    }
+
+    /**
+     * Saves new record in AuditLog DB.
+     */
+    public AuditLog saveErrorAuditLog(String logMsg) {
+        return auditLogRepository.save(new AuditLog(logMsg, AuditLogLevel.ERROR));
     }
 
     /**
@@ -34,7 +42,7 @@ public class AuditLogService {
     public PageResponseDto<AuditLogDto> getAuditLogsPaginated(int page, int size) {
         Page<AuditLog> auditLogPage = auditLogRepository.findAll(PageRequest.of(page, size));
         List<AuditLogDto> auditLogsDtos = auditLogPage.getContent().stream()
-                .map(al -> new AuditLogDto(al.getId(), al.getCreatedAt(), al.getLogMsg()))
+                .map(al -> new AuditLogDto(al.getId(), al.getCreatedAt(), al.getLogMsg(), al.getLogLevel()))
                 .toList();
         return new PageResponseDto<>(auditLogsDtos, auditLogPage.getNumber(), auditLogPage.getSize(), auditLogPage.getTotalPages());
     }

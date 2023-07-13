@@ -1,9 +1,12 @@
 package com.podolak.smartbear.service;
 
+import com.podolak.smartbear.dto.converter.TimeConverterResponseDto;
 import com.podolak.smartbear.exception.InvalidTimeInputException;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,96 +16,116 @@ public class TimeConverterServiceTest {
 
     @Autowired
     private TimeConverterService timeConverterService;
+    @MockBean
+    private AuditLogService auditLogService;
 
     @Test
     public void shouldConvertSpecialHourlyTime() {
-        String midnight1 = timeConverterService.numericalToSpoken("00:00");
-        String midnight2 = timeConverterService.numericalToSpoken("0:00");
-        String noon = timeConverterService.numericalToSpoken("12:00");
+        TimeConverterResponseDto midnight1 = timeConverterService.convertNumericalToSpoken("00:00");
+        TimeConverterResponseDto midnight2 = timeConverterService.convertNumericalToSpoken("0:00");
+        TimeConverterResponseDto noon = timeConverterService.convertNumericalToSpoken("12:00");
 
-        assertEquals("midnight", midnight1);
-        assertEquals("midnight", midnight2);
-        assertEquals("noon", noon);
+        assertEquals("midnight", midnight1.getConvertedTime());
+        assertEquals("midnight", midnight2.getConvertedTime());
+        assertEquals("noon", noon.getConvertedTime());
+
+        Mockito.verify(auditLogService, Mockito.times(3)).saveInfoAuditLog(Mockito.anyString());
+        Mockito.verify(auditLogService, Mockito.never()).saveErrorAuditLog(Mockito.anyString());
     }
 
     @Test
     public void shouldConvertHourlyTimeBeforeNoon() {
-        String five = timeConverterService.numericalToSpoken("05:00");
-        String three = timeConverterService.numericalToSpoken("3:00");
-        String eleven = timeConverterService.numericalToSpoken("11:00");
+        TimeConverterResponseDto five = timeConverterService.convertNumericalToSpoken("05:00");
+        TimeConverterResponseDto three = timeConverterService.convertNumericalToSpoken("3:00");
+        TimeConverterResponseDto eleven = timeConverterService.convertNumericalToSpoken("11:00");
 
-        assertEquals("five o'clock", five);
-        assertEquals("three o'clock", three);
-        assertEquals("eleven o'clock", eleven);
+        assertEquals("five o'clock", five.getConvertedTime());
+        assertEquals("three o'clock", three.getConvertedTime());
+        assertEquals("eleven o'clock", eleven.getConvertedTime());
+
+        Mockito.verify(auditLogService, Mockito.times(3)).saveInfoAuditLog(Mockito.anyString());
+        Mockito.verify(auditLogService, Mockito.never()).saveErrorAuditLog(Mockito.anyString());
     }
 
     @Test
     public void shouldConvertHourlyTimeAfterNoon() {
-        String one = timeConverterService.numericalToSpoken("13:00");
-        String three = timeConverterService.numericalToSpoken("15:00");
-        String eleven = timeConverterService.numericalToSpoken("23:00");
+        TimeConverterResponseDto one = timeConverterService.convertNumericalToSpoken("13:00");
+        TimeConverterResponseDto three = timeConverterService.convertNumericalToSpoken("15:00");
+        TimeConverterResponseDto eleven = timeConverterService.convertNumericalToSpoken("23:00");
 
-        assertEquals("one o'clock", one);
-        assertEquals("three o'clock", three);
-        assertEquals("eleven o'clock", eleven);
+        assertEquals("one o'clock", one.getConvertedTime());
+        assertEquals("three o'clock", three.getConvertedTime());
+        assertEquals("eleven o'clock", eleven.getConvertedTime());
+
+        Mockito.verify(auditLogService, Mockito.times(3)).saveInfoAuditLog(Mockito.anyString());
+        Mockito.verify(auditLogService, Mockito.never()).saveErrorAuditLog(Mockito.anyString());
     }
 
     @Test
     public void shouldConvertTimeMinutesBeforeHalfHour() {
-        String minutePastMidnight = timeConverterService.numericalToSpoken("00:01");
-        String quarterPastNoon = timeConverterService.numericalToSpoken("12:15");
-        String twentySevenPastFive = timeConverterService.numericalToSpoken("5:27");
-        String halfPastTen = timeConverterService.numericalToSpoken("10:30");
-        String fourteenPastThree = timeConverterService.numericalToSpoken("15:14");
-        String sixteenPastEleven = timeConverterService.numericalToSpoken("23:16");
-        String twentyNinePastEight = timeConverterService.numericalToSpoken("20:29");
+        TimeConverterResponseDto minutePastMidnight = timeConverterService.convertNumericalToSpoken("00:01");
+        TimeConverterResponseDto quarterPastNoon = timeConverterService.convertNumericalToSpoken("12:15");
+        TimeConverterResponseDto twentySevenPastFive = timeConverterService.convertNumericalToSpoken("5:27");
+        TimeConverterResponseDto halfPastTen = timeConverterService.convertNumericalToSpoken("10:30");
+        TimeConverterResponseDto fourteenPastThree = timeConverterService.convertNumericalToSpoken("15:14");
+        TimeConverterResponseDto sixteenPastEleven = timeConverterService.convertNumericalToSpoken("23:16");
+        TimeConverterResponseDto twentyNinePastEight = timeConverterService.convertNumericalToSpoken("20:29");
 
-        assertEquals("minute past midnight", minutePastMidnight);
-        assertEquals("quarter past noon", quarterPastNoon);
-        assertEquals("twenty-seven past five", twentySevenPastFive);
-        assertEquals("half past ten", halfPastTen);
-        assertEquals("fourteen past three", fourteenPastThree);
-        assertEquals("sixteen past eleven", sixteenPastEleven);
-        assertEquals("twenty-nine past eight", twentyNinePastEight);
+        assertEquals("minute past midnight", minutePastMidnight.getConvertedTime());
+        assertEquals("quarter past noon", quarterPastNoon.getConvertedTime());
+        assertEquals("twenty-seven past five", twentySevenPastFive.getConvertedTime());
+        assertEquals("half past ten", halfPastTen.getConvertedTime());
+        assertEquals("fourteen past three", fourteenPastThree.getConvertedTime());
+        assertEquals("sixteen past eleven", sixteenPastEleven.getConvertedTime());
+        assertEquals("twenty-nine past eight", twentyNinePastEight.getConvertedTime());
+
+        Mockito.verify(auditLogService, Mockito.times(7)).saveInfoAuditLog(Mockito.anyString());
+        Mockito.verify(auditLogService, Mockito.never()).saveErrorAuditLog(Mockito.anyString());
     }
 
     @Test
     public void shouldConvertTimeMinutesBeyondHalfHour() {
-        String twentyNineToOne = timeConverterService.numericalToSpoken("00:31");
-        String quarterToOne = timeConverterService.numericalToSpoken("12:45");
-        String tenToMidnight = timeConverterService.numericalToSpoken("23:50");
-        String minuteToNoon = timeConverterService.numericalToSpoken("11:59");
-        String fiveToSix = timeConverterService.numericalToSpoken("5:55");
-        String sixteenToEleven = timeConverterService.numericalToSpoken("22:44");
-        String fourteenToEight = timeConverterService.numericalToSpoken("19:46");
+        TimeConverterResponseDto twentyNineToOne = timeConverterService.convertNumericalToSpoken("00:31");
+        TimeConverterResponseDto quarterToOne = timeConverterService.convertNumericalToSpoken("12:45");
+        TimeConverterResponseDto tenToMidnight = timeConverterService.convertNumericalToSpoken("23:50");
+        TimeConverterResponseDto minuteToNoon = timeConverterService.convertNumericalToSpoken("11:59");
+        TimeConverterResponseDto fiveToSix = timeConverterService.convertNumericalToSpoken("5:55");
+        TimeConverterResponseDto sixteenToEleven = timeConverterService.convertNumericalToSpoken("22:44");
+        TimeConverterResponseDto fourteenToEight = timeConverterService.convertNumericalToSpoken("19:46");
 
-        assertEquals("twenty-nine to one", twentyNineToOne);
-        assertEquals("quarter to one", quarterToOne);
-        assertEquals("ten to midnight", tenToMidnight);
-        assertEquals("minute to noon", minuteToNoon);
-        assertEquals("five to six", fiveToSix);
-        assertEquals("sixteen to eleven", sixteenToEleven);
-        assertEquals("fourteen to eight", fourteenToEight);
+        assertEquals("twenty-nine to one", twentyNineToOne.getConvertedTime());
+        assertEquals("quarter to one", quarterToOne.getConvertedTime());
+        assertEquals("ten to midnight", tenToMidnight.getConvertedTime());
+        assertEquals("minute to noon", minuteToNoon.getConvertedTime());
+        assertEquals("five to six", fiveToSix.getConvertedTime());
+        assertEquals("sixteen to eleven", sixteenToEleven.getConvertedTime());
+        assertEquals("fourteen to eight", fourteenToEight.getConvertedTime());
+
+        Mockito.verify(auditLogService, Mockito.times(7)).saveInfoAuditLog(Mockito.anyString());
+        Mockito.verify(auditLogService, Mockito.never()).saveErrorAuditLog(Mockito.anyString());
     }
 
     @Test
     public void shouldThrowExceptionWhenInvalidTimeProvided() {
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("-10:00"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10:-30"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("24:00"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("34:00"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10:60"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10:305"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("105:30"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("1030"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10-30"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10,30"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10;30"));
-        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.numericalToSpoken("10 30"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("-10:00"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10:-30"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("24:00"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("34:00"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10:60"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10:305"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("105:30"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("1030"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10-30"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10,30"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10;30"));
+        assertThrows(InvalidTimeInputException.class, () -> timeConverterService.convertNumericalToSpoken("10 30"));
         InvalidTimeInputException thrownException = assertThrows(InvalidTimeInputException.class,
-                () -> timeConverterService.numericalToSpoken("10:4"));
+                () -> timeConverterService.convertNumericalToSpoken("10:4"));
 
         //Exception message is hardcoded in the InvalidTimeInputException constructor, no need to check message all the time
         assertEquals("Provided invalid time as a parameter.", thrownException.getMessage());
+
+        Mockito.verify(auditLogService, Mockito.never()).saveInfoAuditLog(Mockito.anyString());
+        Mockito.verify(auditLogService, Mockito.times(13)).saveErrorAuditLog(Mockito.anyString());
     }
 }

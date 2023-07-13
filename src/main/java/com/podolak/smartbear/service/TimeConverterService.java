@@ -1,7 +1,11 @@
 package com.podolak.smartbear.service;
 
+import com.podolak.smartbear.dto.converter.TimeConverterResponseDto;
+import com.podolak.smartbear.enums.EnglishNumberLiteral;
+import com.podolak.smartbear.enums.TimePreposition;
 import com.podolak.smartbear.exception.InvalidTimeInputException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.regex.Matcher;
@@ -16,15 +20,24 @@ public class TimeConverterService {
     private static final String NOON = "noon";
     private static final String TIME_24H_REGEX = "([01]?\\d|2[0-3]):[0-5]\\d";
 
+    private final AuditLogService auditLogService;
+
+    @Autowired
+    public TimeConverterService(AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
+
     /**
      * Converts numerical time represented in format HH:MM (24-hour clock) to spoken British time.
      *
      * @param numericalTime time represented in format HH:NN.
-     * @return time represented in spoken British, e.g. half past ten.
+     * @return TimeConverterResponseDto containing requested time to convert and converted time represented
+     * in spoken British, e.g. half past ten.
      */
-    public String numericalToSpoken(String numericalTime) {
+    public TimeConverterResponseDto convertNumericalToSpoken(String numericalTime) {
         if (!validateNumericalTime(numericalTime)) {
             log.warn("Numerical time validation failed.");
+            auditLogService.saveErrorAuditLog("Parsing failure. Provided invalid numerical time: '%s'".formatted(numericalTime));
             throw new InvalidTimeInputException();
         }
 
@@ -32,13 +45,15 @@ public class TimeConverterService {
         int hours = Integer.parseInt(timeElements[0]);
         int minutes = Integer.parseInt(timeElements[1]);
 
-        return convertTimeToSpoken(hours, minutes);
+        String convertedTime = convertTimeToSpoken(hours, minutes);
+        auditLogService.saveInfoAuditLog("Successfully converted numerical time: '%s' into British spoken: '%s'".formatted(numericalTime, convertedTime));
+        return new TimeConverterResponseDto(numericalTime, convertedTime);
     }
 
     private String convertTimeToSpoken(int hours, int minutes) {
-        TimePrepositionEnum timePreposition = TimePrepositionEnum.evaluateTimePreposition(minutes);
-        int hoursToConvert = timePreposition == TimePrepositionEnum.TO ? hours + 1 : hours;
-        if (timePreposition == TimePrepositionEnum.O_CLOCK) {
+        TimePreposition timePreposition = TimePreposition.evaluateTimePreposition(minutes);
+        int hoursToConvert = timePreposition == TimePreposition.TO ? hours + 1 : hours;
+        if (timePreposition == TimePreposition.O_CLOCK) {
             return convertHourlyTimes(hours);
         } else {
             return convertMinutesToSpoken(minutes, timePreposition) + " " + convertHoursToWord(hoursToConvert);
@@ -56,7 +71,7 @@ public class TimeConverterService {
     private String convertHourlyTimes(int hours) {
         String hoursLiteral = convertHoursToWord(hours);
         if (hours != 0 && hours != 12) {
-            return hoursLiteral + convertMinutesToSpoken(0, TimePrepositionEnum.O_CLOCK);
+            return hoursLiteral + convertMinutesToSpoken(0, TimePreposition.O_CLOCK);
         }
         return hoursLiteral;
     }
@@ -77,12 +92,12 @@ public class TimeConverterService {
      * @param timePreposition enum of given time preposition that should be included in the outcome.
      * @return spoken minutes outcome with correct time preposition attached to it.
      */
-    private String convertMinutesToSpoken(int minutes, TimePrepositionEnum timePreposition) {
-        int minutesToConvert = timePreposition == TimePrepositionEnum.TO ? 60 - minutes : minutes;
+    private String convertMinutesToSpoken(int minutes, TimePreposition timePreposition) {
+        int minutesToConvert = timePreposition == TimePreposition.TO ? 60 - minutes : minutes;
         String minutesLiteral = switch (minutesToConvert) {
             case 0 -> "";
             case 1 -> MINUTE;
-            default -> EnglishNumberLiteralsEnum.convertNumericalToSpokenValue(minutesToConvert);
+            default -> EnglishNumberLiteral.convertNumericalToSpokenValue(minutesToConvert);
         };
         return minutesLiteral + " " + timePreposition.getValue();
     }
@@ -101,7 +116,7 @@ public class TimeConverterService {
             case 12 -> NOON;
             default -> {
                 int hoursToConvert = hours > 12 ? hours - 12 : hours;
-                yield EnglishNumberLiteralsEnum.convertNumericalToSpokenValue(hoursToConvert);
+                yield EnglishNumberLiteral.convertNumericalToSpokenValue(hoursToConvert);
             }
         };
     }

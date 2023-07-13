@@ -1,5 +1,6 @@
 package com.podolak.smartbear.dao;
 
+import com.podolak.smartbear.enums.AuditLogLevel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,8 +22,12 @@ public class AuditLog {
     @Column(nullable = false)
     private String logMsg;
 
-    public AuditLog(String logMsg) {
+    @Column(nullable = false)
+    private AuditLogLevel logLevel;
+
+    public AuditLog(String logMsg, AuditLogLevel logLevel) {
         this.createdAt = new Date().getTime();
         this.logMsg = logMsg;
+        this.logLevel = logLevel;
     }
 }
